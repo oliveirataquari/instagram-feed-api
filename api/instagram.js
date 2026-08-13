@@ -8,14 +8,37 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({
-      status: "ok",
-      message: "API do Instagram funcionando."
-    });
+    const fields = [
+      "id",
+      "caption",
+      "media_type",
+      "media_url",
+      "permalink",
+      "thumbnail_url",
+      "timestamp"
+    ].join(",");
+
+    const url =
+      `https://graph.instagram.com/me/media` +
+      `?fields=${fields}` +
+      `&access_token=${token}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "Erro ao consultar o Instagram.",
+        details: data
+      });
+    }
+
+    return res.status(200).json(data);
 
   } catch (error) {
     return res.status(500).json({
-      error: "Erro interno na API."
+      error: "Erro interno na API.",
+      details: error.message
     });
   }
 }
