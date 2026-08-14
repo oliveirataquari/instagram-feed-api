@@ -41,15 +41,29 @@ export default async function handler(req, res) {
       });
     }
 
+    // Padroniza os dados recebidos da Meta
+    const posts = (data.data || []).map((post) => ({
+      id: post.id,
+      type: post.media_type?.toLowerCase() || "",
+      image:
+        post.media_type === "VIDEO"
+          ? post.thumbnail_url
+          : post.media_url,
+      url: post.permalink,
+      caption: post.caption || "",
+      date: post.timestamp
+    }));
+
     // Cache na CDN da Vercel por 30 minutos
-    // Se estiver expirado, pode entregar o cache antigo
-    // enquanto busca uma versão nova em segundo plano.
     res.setHeader(
       "Cache-Control",
       "s-maxage=1800, stale-while-revalidate=86400"
     );
 
-    return res.status(200).json(data);
+    // Retorna nosso próprio formato
+    return res.status(200).json({
+      posts
+    });
 
   } catch (error) {
     return res.status(500).json({
