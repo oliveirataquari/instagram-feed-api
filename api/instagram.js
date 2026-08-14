@@ -41,8 +41,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Padroniza os dados recebidos da Meta
-    const posts = (data.data || []).map((post) => ({
+    let posts = (data.data || []).map((post) => ({
       id: post.id,
       type: post.media_type?.toLowerCase() || "",
       image:
@@ -54,15 +53,32 @@ export default async function handler(req, res) {
       date: post.timestamp
     }));
 
-    // Cache na CDN da Vercel por 30 minutos
+    const tag = req.query.tag
+      ? String(req.query.tag).trim().toLowerCase().replace(/^#/, "")
+      : "";
+
+    if (tag) {
+      const hashtag = `#${tag}`;
+
+      posts = posts.filter((post) =>
+        post.caption.toLowerCase().includes(hashtag)
+      );
+    }
+
+    const limitParam = parseInt(req.query.limit, 10);
+
+    if (!Number.isNaN(limitParam) && limitParam > 0) {
+      posts = posts.slice(0, limitParam);
+    }
+
     res.setHeader(
       "Cache-Control",
       "s-maxage=1800, stale-while-revalidate=86400"
     );
 
-    // Retorna nosso próprio formato
     return res.status(200).json({
-      posts
+      posts,
+      total: posts.length
     });
 
   } catch (error) {
